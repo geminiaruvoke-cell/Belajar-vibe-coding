@@ -25,6 +25,15 @@ export const usersRoute = new Elysia({ prefix: "/api" })
         email: t.String({ format: "email", maxLength: 256 }),
         password: t.String({ maxLength: 256 }),
       }),
+      detail: {
+        tags: ["Users"],
+        summary: "Register new user",
+      },
+      response: {
+        200: t.Object({ data: t.String() }),
+        400: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
     }
   )
   .post(
@@ -47,6 +56,15 @@ export const usersRoute = new Elysia({ prefix: "/api" })
         email: t.String({ format: "email", maxLength: 256 }),
         password: t.String({ maxLength: 256 }),
       }),
+      detail: {
+        tags: ["Users"],
+        summary: "Login user",
+      },
+      response: {
+        200: t.Object({ data: t.String() }),
+        400: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
     }
   )
   .derive(({ headers, set }) => {
@@ -58,29 +76,66 @@ export const usersRoute = new Elysia({ prefix: "/api" })
     const token = authHeader.split(" ")[1];
     return { token };
   })
-  .get("/users/current", async ({ token, set }: any) => {
-    try {
-      const result = await getCurrentUser(token);
-      return result;
-    } catch (error: any) {
-      if (error.message === "Unauthorized") {
-        set.status = 401;
-        return { error: "Unauthorized" };
+  .get(
+    "/users/current",
+    async ({ token, set }: any) => {
+      try {
+        const result = await getCurrentUser(token);
+        return result;
+      } catch (error: any) {
+        if (error.message === "Unauthorized") {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+        set.status = 500;
+        return { error: "Internal server error" };
       }
-      set.status = 500;
-      return { error: "Internal server error" };
+    },
+    {
+      detail: {
+        tags: ["Users"],
+        summary: "Get current user info",
+        security: [{ bearerAuth: [] }],
+      },
+      response: {
+        200: t.Object({
+          data: t.Object({
+            id: t.Number(),
+            name: t.String(),
+            email: t.String(),
+            created_at: t.Any(),
+          }),
+        }),
+        401: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
     }
-  })
-  .delete("/users/logout", async ({ token, set }: any) => {
-    try {
-      const result = await logoutUser(token);
-      return result;
-    } catch (error: any) {
-      if (error.message === "Unauthorized") {
-        set.status = 401;
-        return { error: "Unauthorized" };
+  )
+  .delete(
+    "/users/logout",
+    async ({ token, set }: any) => {
+      try {
+        const result = await logoutUser(token);
+        return result;
+      } catch (error: any) {
+        if (error.message === "Unauthorized") {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+        set.status = 500;
+        return { error: "Internal server error" };
       }
-      set.status = 500;
-      return { error: "Internal server error" };
+    },
+    {
+      detail: {
+        tags: ["Users"],
+        summary: "Logout user",
+        security: [{ bearerAuth: [] }],
+      },
+      response: {
+        200: t.Object({ data: t.String() }),
+        401: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
     }
-  });
+  );
