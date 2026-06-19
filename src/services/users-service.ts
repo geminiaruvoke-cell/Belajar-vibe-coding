@@ -32,6 +32,10 @@ export const loginUser = async (data: Pick<typeof users.$inferInsert, "email" | 
   }
 
   const user = existingUser[0];
+  if (!user) {
+    throw new Error("email atau password salah");
+  }
+
   const isPasswordValid = await Bun.password.verify(data.password, user.password);
   
   if (!isPasswordValid) {
@@ -49,18 +53,21 @@ export const loginUser = async (data: Pick<typeof users.$inferInsert, "email" | 
 };
 
 export const getCurrentUser = async (token: string) => {
-  const existingSession = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1);
-  if (existingSession.length === 0) {
+  const result = await db
+    .select({
+      user: users,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.userId, users.id))
+    .where(eq(sessions.token, token))
+    .limit(1);
+
+  const row = result[0];
+  if (!row || !row.user) {
     throw new Error("Unauthorized");
   }
 
-  const userId = existingSession[0].userId;
-  const existingUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (existingUser.length === 0) {
-    throw new Error("Unauthorized");
-  }
-
-  const user = existingUser[0];
+  const user = row.user;
 
   return {
     data: {
