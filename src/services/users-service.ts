@@ -53,21 +53,27 @@ export const loginUser = async (data: Pick<typeof users.$inferInsert, "email" | 
 };
 
 export const getCurrentUser = async (token: string) => {
-  const result = await db
-    .select({
-      user: users,
-    })
+  const sessionResult = await db
+    .select()
     .from(sessions)
-    .innerJoin(users, eq(sessions.userId, users.id))
     .where(eq(sessions.token, token))
     .limit(1);
 
-  const row = result[0];
-  if (!row || !row.user) {
+  const session = sessionResult[0];
+  if (!session) {
     throw new Error("Unauthorized");
   }
 
-  const user = row.user;
+  const userResult = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1);
+
+  const user = userResult[0];
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
   return {
     data: {
