@@ -1,0 +1,44 @@
+buatkan issue.md yang berisi perencanaan untuk nanti di implementasikan oleh junior proggramer atau ai model yang lebih murah isi dari perencanaannya adalah sebagai berikut :
+
+Isi dari planningnya adalah sebagai berikut :
+
+buat tabel users :
+id interger auto increment 
+name varchar 255 not null
+email varchar 255 not null
+password varchar 255 not null (password merupakan hash dari bcrypt)
+created_at timestamp default current_timestamp
+
+buatkan API untuk registrasi user baru 
+
+Endpoint : POST /api/users
+
+request body :
+
+{
+    "name" : "adit",
+    "email" : "adit@localhost",
+    "password" : "rahasia"
+}
+
+response body (sucsess) :
+
+{
+    "data" : "ok"
+}
+
+response body (error) :
+
+{
+    "error" : "email sudah terdaftar"
+}
+
+Struktur folder di dalam src
+- routes : ini berisi routing elysa js
+- services : ini berisi logic bisnis aplikasi
+
+Struktur file 
+- routes : menggunakan format misal users-route.ts
+- services : menggunakan format misal users-service.ts
+
+Jelaskan tahapan-tahapan yang harus dilakukan untuk mengimplementasikan fitur ini, anggap nanti yang mengimplementasikan adalah junior proggramer atau ai model yang lebih murah
