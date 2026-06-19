@@ -36,7 +36,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(200);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.data).toBe("ok");
     });
 
@@ -68,7 +68,7 @@ describe("Users API Tests", () => {
       );
 
       expect(response.status).toBe(400);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.error).toBe("email sudah terdaftar");
     });
 
@@ -134,7 +134,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(200);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.data).toBeDefined(); // Token
       expect(typeof json.data).toBe("string");
     });
@@ -152,7 +152,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(400);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.error).toBe("email atau password salah");
     });
 
@@ -169,7 +169,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(400);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.error).toBe("email atau password salah");
     });
   });
@@ -201,7 +201,7 @@ describe("Users API Tests", () => {
           }),
         })
       );
-      const loginJson = await loginRes.json();
+      const loginJson: any = await loginRes.json();
       if (loginRes.status !== 200) console.log("Login failed:", loginJson);
       validToken = loginJson.data;
     });
@@ -215,7 +215,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(200);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.data.name).toBe("Current User");
       expect(json.data.email).toBe("current@example.com");
       expect(json.data.password).toBeUndefined(); // Should not return password
@@ -280,7 +280,7 @@ describe("Users API Tests", () => {
           }),
         })
       );
-      const loginJson = await loginRes.json();
+      const loginJson: any = await loginRes.json();
       validToken = loginJson.data;
     });
 
@@ -293,7 +293,7 @@ describe("Users API Tests", () => {
       );
       
       expect(response.status).toBe(200);
-      const json = await response.json();
+      const json: any = await response.json();
       expect(json.data).toBe("OK");
     });
 
