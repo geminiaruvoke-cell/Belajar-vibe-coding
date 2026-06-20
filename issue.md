@@ -1,71 +1,173 @@
-# Perencanaan Unit Test Menggunakan Bun Test
+# Rencana Implementasi: Fitur Swagger API Documentation
 
-Dokumen ini berisi panduan skenario unit test yang harus diimplementasikan untuk semua endpoint API yang ada di aplikasi. Implementasi pengujian ini menggunakan library test bawaan dari **Bun (`bun test`)**.
-
----
-
-## 1. Persyaratan Umum & Konfigurasi Test
-
-* **Tempat Penyimpanan**: Seluruh file test harus disimpan di dalam folder `tests/` (misalnya: `tests/users.test.ts`).
-* **Konsistensi Data**: Agar pengujian berjalan dengan konsisten, **setiap skenario test (atau sebelum setiap test berjalan) harus menghapus seluruh data di tabel `sessions` dan `users`** terlebih dahulu (*database truncation/cleanup*).
-* **Test Runner**: Test harus dapat dijalankan dengan menjalankan perintah:
-  ```bash
-  bun test
-  ```
+Dokumen ini berisi panduan langkah-demi-langkah bagi junior programmer atau model AI untuk mengimplementasikan fitur Swagger API Documentation pada project ini. Tujuannya adalah mempermudah developer lain untuk mempelajari dan menguji endpoint API secara langsung melalui browser.
 
 ---
 
-## 2. Skenario Test per API
+## 🛠️ Langkah 1: Instalasi Library Swagger
 
-Berikut adalah daftar skenario test minimum yang harus dicakup oleh junior programmer atau model AI:
+Elysia memiliki plugin resmi untuk integrasi Swagger UI, yaitu `@elysiajs/swagger`.
 
-### A. API Registrasi (`POST /api/users`)
-1. **Skenario Registrasi Sukses**:
-   * Mengirim request dengan data nama, email, dan password yang valid.
-   * Ekspektasi: Response HTTP Status `200` (atau `201`) dengan payload sukses, dan data user tersimpan di database.
-2. **Skenario Gagal - Email Sudah Terdaftar**:
-   * Mendaftarkan user baru dengan email yang sama dengan user yang sudah terdaftar sebelumnya.
-   * Ekspektasi: Response HTTP Status `400` dengan pesan error "email sudah terdaftar".
-3. **Skenario Gagal - Validasi Skema (Panjang Karakter / Format Email)**:
-   * Mengirim request dengan nama, email, atau password melebihi 256 karakter.
-   * Mengirim request dengan format email yang tidak valid (misal tanpa `@`).
-   * Ekspektasi: Response HTTP Status `422` (Unprocessable Entity) karena validasi skema gagal.
+Jalankan perintah berikut pada terminal di root direktori project:
+```bash
+bun add @elysiajs/swagger
+```
 
-### B. API Login (`POST /api/users/login`)
-1. **Skenario Login Sukses**:
-   * Mengirim request dengan email dan password yang sesuai dengan user terdaftar.
-   * Ekspektasi: Response HTTP Status `200` dengan mengembalikan token sesi baru, dan sesi tersebut tersimpan di tabel `sessions`.
-2. **Skenario Gagal - User Tidak Terdaftar**:
-   * Login menggunakan email yang tidak ada di database.
-   * Ekspektasi: Response HTTP Status `400` dengan pesan error "email atau password salah".
-3. **Skenario Gagal - Password Salah**:
-   * Login menggunakan email terdaftar namun password tidak sesuai.
-   * Ekspektasi: Response HTTP Status `400` dengan pesan error "email atau password salah".
-4. **Skenario Gagal - Validasi Skema**:
-   * Mengirim payload dengan format email salah atau karakter melebihi batas 256 karakter.
-   * Ekspektasi: Response HTTP Status `422` karena kegagalan validasi input.
+---
 
-### C. API Get Current User (`GET /api/users/current`)
-1. **Skenario Sukses**:
-   * Mengirim request dengan header `Authorization: Bearer <token>` yang valid dan aktif di database.
-   * Ekspektasi: Response HTTP Status `200` dengan data user lengkap (`id`, `name`, `email`, `created_at`), tanpa menyertakan password.
-2. **Skenario Gagal - Tanpa Token**:
-   * Mengirim request tanpa menyertakan header `Authorization`.
-   * Ekspektasi: Response HTTP Status `401 Unauthorized` dengan body `{ "error": "Unauthorized" }`.
-3. **Skenario Gagal - Format Token Salah**:
-   * Mengirim header `Authorization` yang tidak berformat `Bearer <token>` (misal hanya token saja tanpa kata `Bearer`).
-   * Ekspektasi: Response HTTP Status `401 Unauthorized` dengan body `{ "error": "Unauthorized" }`.
-4. **Skenario Gagal - Sesi Tidak Valid/Expired**:
-   * Mengirim header `Authorization: Bearer <token_palsu_atau_tidak_ada_di_db>`.
-   * Ekspektasi: Response HTTP Status `401 Unauthorized` dengan body `{ "error": "Unauthorized" }`.
+## ⚙️ Langkah 2: Registrasi Swagger Plugin di `src/index.ts`
 
-### D. API Logout (`DELETE /api/users/logout`)
-1. **Skenario Logout Sukses**:
-   * Mengirim request dengan header `Authorization: Bearer <token>` yang valid.
-   * Ekspektasi: Response HTTP Status `200` dengan body `{ "data": "OK" }`, dan data sesi tersebut **dihapus** dari tabel `sessions` di database.
-2. **Skenario Gagal - Sesi Tidak Valid / Tanpa Token**:
-   * Mengirim request logout tanpa token valid atau tanpa header `Authorization`.
-   * Ekspektasi: Response HTTP Status `401 Unauthorized`.
-3. **Skenario Integrasi (Pasca-Logout)**:
-   * Lakukan login $\rightarrow$ panggil get current user (sukses) $\rightarrow$ panggil logout (sukses) $\rightarrow$ panggil kembali get current user dengan token yang sama.
-   * Ekspektasi: Pemanggilan get current user kedua harus mengembalikan status `401 Unauthorized` karena token sesi sudah dihapus saat logout.
+Impor dan pasang plugin swagger pada server utama di file [src/index.ts](file:///c:/Users/USER/Developments/GITHUB/belajar-vibe-coding/src/index.ts).
+
+### Petunjuk Implementasi:
+1. Impor `swagger` dari `@elysiajs/swagger`.
+2. Gunakan method `.use(swagger(...))` pada instance `app`.
+3. Letakkan konfigurasi Swagger **sebelum** routing `.use(usersRoute)` agar UI dapat digenerate dengan benar.
+4. Konfigurasikan opsi Swagger untuk mendeskripsikan API ini dan tambahkan skema autentikasi Bearer Token agar route yang terproteksi dapat diuji dari Swagger UI.
+
+### Contoh Potongan Kode:
+```typescript
+import { Elysia } from "elysia";
+import { swagger } from "@elysiajs/swagger";
+import { usersRoute } from "./routes/users-route";
+
+export const app = new Elysia()
+  .use(
+    swagger({
+      path: "/swagger", // Endpoint untuk membuka dokumentasi UI
+      documentation: {
+        info: {
+          title: "Belajar Vibe Coding API",
+          version: "1.0.0",
+          description: "Dokumentasi RESTful API untuk User Management & Autentikasi",
+        },
+        components: {
+          securitySchemes: {
+            BearerAuth: {
+              type: "apiKey",
+              name: "Authorization",
+              in: "header",
+              description: "Masukkan token dengan format: Bearer <token_sesi>",
+            },
+          },
+        },
+      },
+    })
+  )
+  .get("/", () => "Hello World! Server is up and running.")
+  .use(usersRoute)
+  .listen(3000);
+```
+
+---
+
+## 📝 Langkah 3: Dokumentasikan Route di `src/routes/users-route.ts`
+
+Untuk melengkapi informasi request dan response di Swagger UI, tambahkan metadata properti `response` dan `detail` pada tiap endpoint di file [src/routes/users-route.ts](file:///c:/Users/USER/Developments/GITHUB/belajar-vibe-coding/src/routes/users-route.ts).
+
+Lengkapi masing-masing route dengan:
+- **`detail.tags`**: Mengelompokkan route (contoh: `['Users']`).
+- **`detail.summary`**: Deskripsi singkat kegunaan API.
+- **`response`**: Skema validasi response untuk masing-masing HTTP status code (200, 400, 401, 422).
+- **`detail.security`**: (Khusus route terproteksi) Menandakan bahwa endpoint membutuhkan header Authorization Bearer.
+
+### Detail Skenario Route:
+
+### A. Registrasi User (`POST /users`)
+* **Tags**: `['Users']`
+* **Summary**: `'Registrasi pengguna baru'`
+* **Response**:
+  - `200`: `t.Object({ data: t.String() })` — Jika berhasil mengembalikan `{ "data": "ok" }`.
+  - `400`: `t.Object({ error: t.String() })` — Jika email sudah terdaftar.
+  - `422`: Schema validasi error (otomatis digenerate oleh Elysia).
+  - `500`: `t.Object({ error: t.String() })` — Internal server error.
+
+*Contoh Konfigurasi:*
+```typescript
+  {
+    body: t.Object({
+      name: t.String({ maxLength: 256 }),
+      email: t.String({ format: "email", maxLength: 256 }),
+      password: t.String({ maxLength: 256 }),
+    }),
+    response: {
+      200: t.Object({ data: t.String() }),
+      400: t.Object({ error: t.String() }),
+      500: t.Object({ error: t.String() }),
+    },
+    detail: {
+      tags: ["Users"],
+      summary: "Registrasi pengguna baru",
+    },
+  }
+```
+
+### B. Login User (`POST /users/login`)
+* **Tags**: `['Users']`
+* **Summary**: `'Login untuk mendapatkan token sesi'`
+* **Response**:
+  - `200`: `t.Object({ data: t.String() })` — Mengembalikan token UUID.
+  - `400`: `t.Object({ error: t.String() })` — Password salah/user tidak ada.
+  - `422`: Schema validasi error.
+  - `500`: `t.Object({ error: t.String() })` — Internal server error.
+
+### C. Get Current User (`GET /users/current`)
+* **Tags**: `['Users']`
+* **Summary**: `'Mengambil profil detail user aktif'`
+* **Security**: `[{ BearerAuth: [] }]`
+* **Response**:
+  - `200`: `t.Object({ data: t.Object({ id: t.Number(), name: t.String(), email: t.String(), created_at: t.Date() }) })`
+  - `401`: `t.Object({ error: t.String() })` — Token invalid/tidak dikirim.
+  - `500`: `t.Object({ error: t.String() })` — Internal server error.
+
+*Contoh Konfigurasi:*
+```typescript
+  {
+    response: {
+      200: t.Object({
+        data: t.Object({
+          id: t.Number(),
+          name: t.String(),
+          email: t.String(),
+          created_at: t.Any(), // tipe timestamp MySQL
+        }),
+      }),
+      401: t.Object({ error: t.String() }),
+      500: t.Object({ error: t.String() }),
+    },
+    detail: {
+      tags: ["Users"],
+      summary: "Mengambil profil detail user aktif",
+      security: [{ BearerAuth: [] }],
+    },
+  }
+```
+
+### D. Logout User (`DELETE /users/logout`)
+* **Tags**: `['Users']`
+* **Summary**: `'Logout dan hapus sesi token aktif'`
+* **Security**: `[{ BearerAuth: [] }]`
+* **Response**:
+  - `200`: `t.Object({ data: t.String() })` — Jika sukses mengembalikan `{ "data": "OK" }`.
+  - `401`: `t.Object({ error: t.String() })` — Token invalid/tidak dikirim.
+  - `500`: `t.Object({ error: t.String() })` — Internal server error.
+
+---
+
+## 🧪 Langkah 4: Pengujian dan Verifikasi
+
+Setelah seluruh langkah di atas selesai diimplementasikan:
+1. Jalankan aplikasi menggunakan Bun:
+   ```bash
+   bun run src/index.ts
+   ```
+2. Buka browser dan arahkan alamat ke:
+   ```text
+   http://localhost:3000/swagger
+   ```
+3. **Verifikasi Tampilan UI**:
+   - Pastikan terdapat dokumentasi 4 endpoint API `/users`, `/users/login`, `/users/current`, dan `/users/logout`.
+   - Pastikan tombol **Authorize** (ikon gembok) muncul di kanan atas halaman Swagger, klik tombol tersebut dan masukkan Bearer Token Anda untuk mencoba endpoint yang terproteksi langsung dari Swagger UI.
+   - Uji masing-masing endpoint dengan skenario sukses dan gagal untuk memverifikasi bahwa skema input/output di Swagger bekerja sebagaimana mestinya.
+4. **Verifikasi Unit Test**:
+   - Jalankan `bun test` untuk memastikan penambahan konfigurasi skema swagger tidak merusak jalannya fungsionalitas API utama.
